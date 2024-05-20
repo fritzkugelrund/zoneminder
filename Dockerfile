@@ -1,6 +1,6 @@
-FROM phusion/baseimage:master as builder
+FROM linuxserver/docker-baseimage-ubuntu:jammy as builder
 
-LABEL maintainer="dlandon"
+LABEL maintainer="fritzkugelrund"
 
 ENV	DEBCONF_NONINTERACTIVE_SEEN="true" \
 	DEBIAN_FRONTEND="noninteractive" \
