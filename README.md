@@ -21,7 +21,7 @@ Go to the Zoneminder Forum [here](https://forums.zoneminder.com/) for support.
 Install the docker container by going to a command line and enter the command:
 
 ```bash
-docker pull dlandon/zoneminder.machine.learning
+docker pull fritzkugelrund/zoneminder
 ```
 
 This will pull the zoneminder docker image. Once it is installed you are ready to run the docker container.
@@ -44,7 +44,7 @@ docker run -d --name="Zoneminder" \
 -e MULTI_PORT_END="0" \
 -v "/mnt/Zoneminder":"/config":rw \
 -v "/mnt/Zoneminder/data":"/var/cache/zoneminder":rw \
-dlandon/zoneminder.machine.learning
+fritzkugelrund/zoneminder
 ```
 
 For http:// access use: `-p 8080:80/tcp`
