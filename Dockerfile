@@ -1,4 +1,4 @@
-FROM linuxserver/docker-baseimage-ubuntu:jammy as builder
+FROM ubuntu:jammy as builder
 
 LABEL maintainer="fritzkugelrund"
 
@@ -22,6 +22,9 @@ COPY init/ /etc/my_init.d/
 COPY defaults/ /root/
 COPY zmeventnotification/ /root/zmeventnotification/
 
+RUN	apt-get update && \
+	apt-get -y install apt-utils software-properties-common
+
 RUN	add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	add-apt-repository ppa:ondrej/php && \
 	add-apt-repository ppa:ondrej/apache2 && \
@@ -29,7 +32,7 @@ RUN	add-apt-repository -y ppa:iconnor/zoneminder-$ZM_VERS && \
 	apt-get -y upgrade -o Dpkg::Options::="--force-confold" && \
 	apt-get -y dist-upgrade -o Dpkg::Options::="--force-confold" && \
 	apt-get -y install apache2 mariadb-server && \
-	apt-get -y install ssmtp mailutils net-tools wget sudo make cmake gcc && \
+	apt-get -y install ssmtp mailutils net-tools wget sudo make cmake gcc syslog-ng && \
 	apt-get -y install php$PHP_VERS php$PHP_VERS-fpm libapache2-mod-php$PHP_VERS php$PHP_VERS-mysql php$PHP_VERS-gd && \
 	apt-get -y install libcrypt-mysql-perl libyaml-perl libjson-perl libavutil-dev ffmpeg && \
 	apt-get -y install --no-install-recommends libvlc-dev libvlccore-dev vlc-bin vlc-plugin-base vlc-plugin-video-output && \
@@ -80,7 +83,8 @@ RUN	cd /root && \
 	chown -R www-data:www-data /usr/share/zoneminder/ && \
 	echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
 	sed -i "s|^;date.timezone =.*|date.timezone = ${TZ}|" /etc/php/$PHP_VERS/apache2/php.ini && \
-	service mysql start && \
+	service mariadb start && \
+	mysql -sfu root < /usr/share/zoneminder/db/zm_create.sql && \
 	mysql -uroot -e "grant all on zm.* to 'zmuser'@localhost identified by 'zmpass';" && \
 	mysqladmin -uroot reload && \
 	mysql -sfu root < "mysql_secure_installation.sql" && \
@@ -91,7 +95,7 @@ RUN	cd /root && \
 FROM build4 as build5
 RUN	mv /root/zoneminder /etc/init.d/zoneminder && \
 	chmod +x /etc/init.d/zoneminder && \
-	service mysql restart && \
+	service mariadb restart && \
 	sleep 5 && \
 	service apache2 start && \
 	service zoneminder start
@@ -104,7 +108,8 @@ RUN	systemd-tmpfiles --create zoneminder.conf && \
 	chown -R www-data:www-data /var/lib/zmeventnotification/ && \
 	chmod -R +x /etc/my_init.d/ && \
 	cp -p /etc/zm/zm.conf /root/zm.conf && \
-	echo "#!/bin/sh\n\n/usr/bin/zmaudit.pl -f" >> /etc/cron.weekly/zmaudit && \
+	mkdir /etc/cron.weekly && \
+	echo "#\!/bin/sh\n\n/usr/bin/zmaudit.pl -f" >> /etc/cron.weekly/zmaudit && \
 	chmod +x /etc/cron.weekly/zmaudit && \
 	cp /etc/apache2/ports.conf /etc/apache2/ports.conf.default && \
 	cp /etc/apache2/sites-enabled/default-ssl.conf /etc/apache2/sites-enabled/default-ssl.conf.default && \
