@@ -1,0 +1,58 @@
+version: "3.5"
+services:
+  zoneminder:
+    image: fritzkugelrund/zoneminder:v0.8.0-alpha
+    ports:
+      - 8443:443/tcp
+      - 9000:9000/tcp
+    environment:
+      - TZ=Europe/Berlin
+      - PUID=99
+      - PGID=100
+      - MULTI_PORT_START=0
+      - MULTI_PORT_END=0
+      - INSTALL_HOOK=1
+      - INSTALL_FACE=1
+      - INSTALL_TINY_YOLOV3=0
+      - INSTALL_YOLOV3=0
+      - INSTALL_TINY_YOLOV4=1
+      - INSTALL_YOLOV4=1
+      - NVIDIA_VISIBLE_DEVICES=0
+    volumes:
+      - config:/config:rw
+      - data:/var/cache/zoneminder:rw
+      - cuda:/usr/local/cuda:ro
+    networks:
+      - zm_mvl
+    deploy:
+      replicas: 1
+
+      resources:
+        reservations:
+          generic_resources:
+            - discrete_resource_spec:
+                kind: "NVIDIA-GPU"
+                value: 1
+volumes:
+  config:
+    driver: local
+    driver_opts:
+      type: none
+      device: /data/docker/zoneminder/config
+      o: bind
+  data:
+    driver: local
+    driver_opts:
+      type: none
+      device: /data/docker/zoneminder/data
+      o: bind
+  cuda:
+    driver: local
+    driver_opts:
+      type: none
+      device: /usr/local/cuda
+      o: bind
+networks:
+  zm_mvl:
+    external: true
+    name: "zm_mvl"
